@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.env
+
+# User-specific ingredient and utensil files
+main_ingredients.txt
+ustensiles.txt
+
+# Temporary audio recordings
+*.wav
