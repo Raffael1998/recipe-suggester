@@ -36,14 +36,21 @@ st.write("Enregistrez votre demande ou écrivez-la ci-dessous.")
 
 LANGUAGE = "fr"
 
+if "transcribed_text" not in st.session_state:
+    st.session_state["transcribed_text"] = ""
+
 audio_file = st.audio_input("Enregistrer votre demande")
+if audio_file:
+    st.session_state["transcribed_text"] = transcribe_audio(audio_file, LANGUAGE)
+
+st.write(st.session_state["transcribed_text"])
 
 text_request = st.text_input("Ou écrivez votre demande :")
 
 if st.button("Générer une recette"):
     request_text = text_request.strip()
-    if audio_file:
-        request_text = f"{request_text} {transcribe_audio(audio_file, LANGUAGE)}".strip()
+    if st.session_state["transcribed_text"]:
+        request_text = f"{request_text} {st.session_state['transcribed_text']}".strip()
     if not request_text:
         st.error("Veuillez fournir une demande par la voix ou le texte.")
     else:
