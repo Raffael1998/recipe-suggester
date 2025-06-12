@@ -1,15 +1,46 @@
-import os
+import tempfile
+from pathlib import Path
+from typing import Any
+
 import streamlit as st
-from streamlit_audiorecorder import st_audiorecorder
+import streamlit_mic_recorder as mic
 
 from suggester import RecipeSuggester
 
 suggester = RecipeSuggester()
 
+
+def transcribe_audio(data: Any, language: str) -> str:
+    """Return transcribed text from uploaded data or raw bytes."""
+    if data is None:
+        return ""
+    if isinstance(data, bytes):
+        suffix = ".wav"
+        buffer = data
+    else:
+        suffix = Path(data.name).suffix
+        buffer = data.getbuffer()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(buffer)
+        tmp_path = Path(tmp.name)
+    try:
+        with open(tmp_path, "rb") as f:
+            response = suggester.client.audio.transcriptions.create(
+                model="whisper-1", file=f, language=language
+            )
+            return response.text.strip()
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
 st.title("Recipe Recommender")
 st.write("Record your request or type it below.")
 
-audio_bytes = st_audiorecorder("Record your request")
+language = st.selectbox("Language", ["en", "fr"], index=1)
+audio_data = mic.mic_recorder(
+    start_prompt="Click to record",
+    stop_prompt="Click to stop",
+    key="request_rec",
+)
 text_request = st.text_input("Or type your request:")
 
 # Sidebar editors for ingredient and utensil lists
@@ -39,12 +70,8 @@ with st.sidebar.form("utensils_form"):
 
 if st.button("Generate recipe"):
     request_text = text_request.strip()
-    if audio_bytes is not None:
-        with open("temp_audio.wav", "wb") as tmp:
-            tmp.write(audio_bytes)
-        with open("temp_audio.wav", "rb") as tmp:
-            result = suggester.client.audio.transcriptions.create(model="whisper-1", file=tmp)
-            request_text = f"{request_text} {result.text}".strip()
+    if audio_data:
+        request_text = f"{request_text} {transcribe_audio(audio_data['bytes'], language)}".strip()
     if not request_text:
         st.error("Please provide a request either by voice or text.")
     else:
