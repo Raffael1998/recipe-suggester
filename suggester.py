@@ -46,7 +46,7 @@ class RecipeSuggester:
         utensils = self.load_list(self.utensil_file)
         prompt = self.create_prompt(request_text, ingredients, utensils)
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4.1-nano",
             messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content
