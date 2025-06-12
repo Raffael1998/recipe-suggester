@@ -32,49 +32,57 @@ def transcribe_audio(data: Any, language: str) -> str:
     finally:
         tmp_path.unlink(missing_ok=True)
 
-st.title("Recipe Recommender")
-st.write("Record your request or type it below.")
+st.title("Recommandation de recettes")
+st.write("Enregistrez votre demande ou écrivez-la ci-dessous.")
 
-language = st.selectbox("Language", ["en", "fr"], index=1)
+LANGUAGE = "fr"
+if "transcribed_text" not in st.session_state:
+    st.session_state["transcribed_text"] = ""
+
 audio_data = mic.mic_recorder(key="request_rec")
-text_request = st.text_input("Or type your request:")
+if audio_data and "bytes" in audio_data:
+    st.session_state["transcribed_text"] = transcribe_audio(audio_data["bytes"], LANGUAGE)
 
-if st.button("Generate recipe"):
+st.write(st.session_state["transcribed_text"])
+
+text_request = st.text_input("Ou écrivez votre demande :")
+
+if st.button("Générer une recette"):
     request_text = text_request.strip()
     if audio_data:
-        request_text = f"{request_text} {transcribe_audio(audio_data['bytes'], language)}".strip()
+        request_text = f"{request_text} {st.session_state['transcribed_text']}".strip()
     if not request_text:
-        st.error("Please provide a request either by voice or text.")
+        st.error("Veuillez fournir une demande par la voix ou le texte.")
     else:
         try:
             recipe = suggester.suggest_recipe(request_text)
             st.markdown(recipe)
         except Exception as exc:
-            st.error(f"Error communicating with OpenAI: {exc}")
+            st.error(f"Erreur lors de la communication avec OpenAI : {exc}")
 
 # Editors for ingredient and utensil lists
-st.header("Edit ingredients")
-with st.form("ingredients_form"):
-    ing_text = st.text_area(
-        "Ingredients (one per line)",
-        "\n".join(suggester.load_list(suggester.ingredient_file)),
-        height=150,
-    )
-    save_ing = st.form_submit_button("Save ingredients")
-    if save_ing:
-        items = [line.strip() for line in ing_text.splitlines() if line.strip()]
-        suggester.save_list(items, suggester.ingredient_file)
-        st.success("Ingredients saved")
+with st.expander("Modifier les ingrédients"):
+    with st.form("ingredients_form"):
+        ing_text = st.text_area(
+            "Ingrédients (un par ligne)",
+            "\n".join(suggester.load_list(suggester.ingredient_file)),
+            height=150,
+        )
+        save_ing = st.form_submit_button("Enregistrer les ingrédients")
+        if save_ing:
+            items = [line.strip() for line in ing_text.splitlines() if line.strip()]
+            suggester.save_list(items, suggester.ingredient_file)
+            st.success("Ingrédients enregistrés")
 
-st.header("Edit utensils")
-with st.form("utensils_form"):
-    utn_text = st.text_area(
-        "Utensils (one per line)",
-        "\n".join(suggester.load_list(suggester.utensil_file)),
-        height=150,
-    )
-    save_utn = st.form_submit_button("Save utensils")
-    if save_utn:
-        items = [line.strip() for line in utn_text.splitlines() if line.strip()]
-        suggester.save_list(items, suggester.utensil_file)
-        st.success("Utensils saved")
+with st.expander("Modifier les ustensiles"):
+    with st.form("utensils_form"):
+        utn_text = st.text_area(
+            "Ustensiles (un par ligne)",
+            "\n".join(suggester.load_list(suggester.utensil_file)),
+            height=150,
+        )
+        save_utn = st.form_submit_button("Enregistrer les ustensiles")
+        if save_utn:
+            items = [line.strip() for line in utn_text.splitlines() if line.strip()]
+            suggester.save_list(items, suggester.utensil_file)
+            st.success("Ustensiles enregistrés")

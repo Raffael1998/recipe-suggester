@@ -32,11 +32,12 @@ class RecipeSuggester:
         ingr = ", ".join(ingredients) if ingredients else "none"
         utn = ", ".join(utensils) if utensils else "none"
         return (
-            "You are a helpful cooking assistant. "
-            f"The user can use these base ingredients: {ingr}. "
-            f"Available utensils: {utn}. "
-            f"User request: {request_text}. "
-            "Suggest a recipe that fits the request, taking into account the available ingredients and utensils."
+            "Tu es un assistant culinaire serviable. "
+            f"L'utilisateur peut utiliser ces ingrédients de base : {ingr}. "
+            f"Ustensiles disponibles : {utn}. "
+            f"Demande de l'utilisateur : {request_text}. "
+            "Suggère une recette adaptée en prenant en compte les ingrédients et ustensiles disponibles. "
+            "Réponds uniquement en français."
         )
 
     def suggest_recipe(self, request_text: str) -> str:
