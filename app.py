@@ -3,23 +3,22 @@ from pathlib import Path
 from typing import Any
 
 import streamlit as st
-import streamlit_mic_recorder as mic
 
 from suggester import RecipeSuggester
 
 suggester = RecipeSuggester()
 
 
-def transcribe_audio(data: Any, language: str) -> str:
-    """Return transcribed text from uploaded data or raw bytes."""
-    if data is None:
+def transcribe_audio(uploaded_file: Any, language: str) -> str:
+    """Return transcribed text from an uploaded audio file or raw bytes."""
+    if uploaded_file is None:
         return ""
-    if isinstance(data, bytes):
+    if isinstance(uploaded_file, bytes):
         suffix = ".wav"
-        buffer = data
+        buffer = uploaded_file
     else:
-        suffix = Path(data.name).suffix
-        buffer = data.getbuffer()
+        suffix = Path(uploaded_file.name).suffix
+        buffer = uploaded_file.getbuffer()
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(buffer)
         tmp_path = Path(tmp.name)
@@ -36,21 +35,15 @@ st.title("Recommandation de recettes")
 st.write("Enregistrez votre demande ou écrivez-la ci-dessous.")
 
 LANGUAGE = "fr"
-if "transcribed_text" not in st.session_state:
-    st.session_state["transcribed_text"] = ""
 
-audio_data = mic.mic_recorder(key="request_rec")
-if audio_data and "bytes" in audio_data:
-    st.session_state["transcribed_text"] = transcribe_audio(audio_data["bytes"], LANGUAGE)
-
-st.write(st.session_state["transcribed_text"])
+audio_file = st.audio_input("Enregistrer votre demande")
 
 text_request = st.text_input("Ou écrivez votre demande :")
 
 if st.button("Générer une recette"):
     request_text = text_request.strip()
-    if audio_data:
-        request_text = f"{request_text} {st.session_state['transcribed_text']}".strip()
+    if audio_file:
+        request_text = f"{request_text} {transcribe_audio(audio_file, LANGUAGE)}".strip()
     if not request_text:
         st.error("Veuillez fournir une demande par la voix ou le texte.")
     else:
