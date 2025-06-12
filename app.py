@@ -75,14 +75,3 @@ with st.expander("Modifier les ingrédients"):
             st.success("Ingrédients enregistrés")
 
 with st.expander("Modifier les ustensiles"):
-    with st.form("utensils_form"):
-        utn_text = st.text_area(
-            "Ustensiles (un par ligne)",
-            "\n".join(suggester.load_list(suggester.utensil_file)),
-            height=150,
-        )
-        save_utn = st.form_submit_button("Enregistrer les ustensiles")
-        if save_utn:
-            items = [line.strip() for line in utn_text.splitlines() if line.strip()]
-            suggester.save_list(items, suggester.utensil_file)
-            st.success("Ustensiles enregistrés")
