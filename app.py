@@ -36,37 +36,8 @@ st.title("Recipe Recommender")
 st.write("Record your request or type it below.")
 
 language = st.selectbox("Language", ["en", "fr"], index=1)
-audio_data = mic.mic_recorder(
-    start_prompt="Click to record",
-    stop_prompt="Click to stop",
-    key="request_rec",
-)
+audio_data = mic.mic_recorder(key="request_rec")
 text_request = st.text_input("Or type your request:")
-
-# Sidebar editors for ingredient and utensil lists
-with st.sidebar.form("ingredients_form"):
-    st.write("Edit ingredients")
-    ingredients = suggester.load_list(suggester.ingredient_file)
-    sel_ing = st.multiselect("Ingredients", ingredients, default=ingredients, key="ing_select")
-    new_ing = st.text_input("Add ingredient", key="new_ing")
-    save_ing = st.form_submit_button("Save ingredients")
-    if save_ing:
-        if new_ing.strip():
-            sel_ing.append(new_ing.strip())
-        suggester.save_list(sel_ing, suggester.ingredient_file)
-        st.success("Ingredients saved")
-
-with st.sidebar.form("utensils_form"):
-    st.write("Edit utensils")
-    utensils = suggester.load_list(suggester.utensil_file)
-    sel_utn = st.multiselect("Utensils", utensils, default=utensils, key="utn_select")
-    new_utn = st.text_input("Add utensil", key="new_utn")
-    save_utn = st.form_submit_button("Save utensils")
-    if save_utn:
-        if new_utn.strip():
-            sel_utn.append(new_utn.strip())
-        suggester.save_list(sel_utn, suggester.utensil_file)
-        st.success("Utensils saved")
 
 if st.button("Generate recipe"):
     request_text = text_request.strip()
@@ -80,3 +51,30 @@ if st.button("Generate recipe"):
             st.markdown(recipe)
         except Exception as exc:
             st.error(f"Error communicating with OpenAI: {exc}")
+
+# Editors for ingredient and utensil lists
+st.header("Edit ingredients")
+with st.form("ingredients_form"):
+    ing_text = st.text_area(
+        "Ingredients (one per line)",
+        "\n".join(suggester.load_list(suggester.ingredient_file)),
+        height=150,
+    )
+    save_ing = st.form_submit_button("Save ingredients")
+    if save_ing:
+        items = [line.strip() for line in ing_text.splitlines() if line.strip()]
+        suggester.save_list(items, suggester.ingredient_file)
+        st.success("Ingredients saved")
+
+st.header("Edit utensils")
+with st.form("utensils_form"):
+    utn_text = st.text_area(
+        "Utensils (one per line)",
+        "\n".join(suggester.load_list(suggester.utensil_file)),
+        height=150,
+    )
+    save_utn = st.form_submit_button("Save utensils")
+    if save_utn:
+        items = [line.strip() for line in utn_text.splitlines() if line.strip()]
+        suggester.save_list(items, suggester.utensil_file)
+        st.success("Utensils saved")
