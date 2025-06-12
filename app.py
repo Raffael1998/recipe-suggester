@@ -3,12 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import streamlit as st
-try:
-    from audiorecorder import audiorecorder
-    HAVE_AUDIOREC = True
-except Exception:  # Fall back to mic_recorder if audiorecorder is missing
-    HAVE_AUDIOREC = False
-    import streamlit_mic_recorder as mic
+import streamlit_mic_recorder as mic
 
 from suggester import RecipeSuggester
 
@@ -40,49 +35,13 @@ def transcribe_audio(data: Any, language: str) -> str:
 st.title("Recommandation de recettes")
 st.write("Enregistrez votre demande ou écrivez-la ci-dessous.")
 
-# Display currently available ingredients and utensils to guide the user
-ingredients_list = suggester.load_list(suggester.ingredient_file)
-utensils_list = suggester.load_list(suggester.utensil_file)
-
-st.markdown("**Liste des ingrédients de base que vous avez toujours :**")
-st.write(", ".join(ingredients_list) if ingredients_list else "(aucun)")
-
-st.markdown(
-    "**Liste des ustensiles à votre disposition pour la recette. "
-    "Mettez-en un maximum pour ne pas trop guider le recommandeur !**"
-)
-st.write(", ".join(utensils_list) if utensils_list else "(aucun)")
-
 LANGUAGE = "fr"
 if "transcribed_text" not in st.session_state:
     st.session_state["transcribed_text"] = ""
 
-has_audio = False
-if HAVE_AUDIOREC:
-    # audiorecorder provides a microphone button with playback controls
-    audio_bytes = audiorecorder(
-        "Commencer l'enregistrement",
-        "Arrêter l'enregistrement",
-    )
-    if len(audio_bytes) > 0:
-        st.audio(audio_bytes.tobytes())
-        st.session_state["transcribed_text"] = transcribe_audio(
-            audio_bytes.tobytes(), LANGUAGE
-        )
-        has_audio = True
-else:
-    # Fallback to the simpler mic_recorder component
-    audio_data = mic.mic_recorder(
-        start_prompt=None,
-        stop_prompt=None,
-        key="request_rec",
-        use_container_width=True,
-    )
-    if audio_data and "bytes" in audio_data:
-        st.session_state["transcribed_text"] = transcribe_audio(
-            audio_data["bytes"], LANGUAGE
-        )
-        has_audio = True
+audio_data = mic.mic_recorder(key="request_rec")
+if audio_data and "bytes" in audio_data:
+    st.session_state["transcribed_text"] = transcribe_audio(audio_data["bytes"], LANGUAGE)
 
 st.write(st.session_state["transcribed_text"])
 
@@ -90,7 +49,7 @@ text_request = st.text_input("Ou écrivez votre demande :")
 
 if st.button("Générer une recette"):
     request_text = text_request.strip()
-    if has_audio:
+    if audio_data:
         request_text = f"{request_text} {st.session_state['transcribed_text']}".strip()
     if not request_text:
         st.error("Veuillez fournir une demande par la voix ou le texte.")
